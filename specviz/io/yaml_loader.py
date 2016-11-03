@@ -235,10 +235,19 @@ class FitsYamlRegister(YamlRegister):
         wcs = WCS(hdulist[self._reference.wcs['hdu']].header)
 
         # Usually, all the data should be in this table
-        tab = _read_table(hdulist[self._reference.data['hdu']], col_idx=self._reference.data['col'])
-
-        # Read flux column
-        data, unit, mask = _read_table_column(tab, self._reference.data['col'])
+        hdu = hdulist[self._reference.data['hdu']]
+        # import pdb
+        # pdb.set_trace()
+        if isinstance(hdu, fits.BinTableHDU):
+            tab = _read_table(hdu, col_idx=self._reference.data['col'])
+            # Read flux column
+            data, unit, mask = _read_table_column(tab, self._reference.data['col'])
+        elif isinstance(hdu, fits.ImageHDU):
+            data = hdu.data
+            unit = None
+            mask = ~(np.isfinite(data))
+        else:
+            raise ValueError('Unknown HDU type: {}'.format(type(hdu)))
 
         # Find flux unit, if not in column
         if unit is None:
